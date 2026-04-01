@@ -16,22 +16,22 @@ from pytdx.reader.base_reader import BaseReader
 class TdxDailyBarReader(BaseReader):
 
     def __init__(self, vipdoc_path=None):
-
+        
         self.vipdoc_path = vipdoc_path
 
     def generate_filename(self, code, exchange):
-
+        
         if self.vipdoc_path == None:
             raise TdxNotAssignVipdocPathException(r"Please provide a vipdoc path , such as c:\\newtdx\\vipdoc")
 
         fname = os.path.join(self.vipdoc_path, exchange)
         fname = os.path.join(fname, 'lday')
-        fname = os.path.join(fname, '%s%s.day' % (exchange, code))
+        fname = os.path.join(fname, '%s%s.day' % (exchange, code))        
         return fname
-
+    
     def get_kline_by_code(self, code, exchange):
-
-        fname = self.generate_filename(code, exchange)
+        
+        fname = self.generate_filename(code, exchange)        
         return self.parse_data_by_file(fname)
 
     def parse_data_by_file(self, fname):
@@ -43,19 +43,19 @@ class TdxDailyBarReader(BaseReader):
             content = f.read()
             return self.unpack_records('<IIIIIfII', content)
         return []
-
+    
     def get_df(self, code_or_file, exchange=None):
 
         if exchange == None:
             return self.get_df_by_file(code_or_file)
         else:
             return self.get_df_by_code(code_or_file, exchange)
-
+        
     def get_df_by_file(self, fname):
 
         if not os.path.isfile(fname):
             raise TdxFileNotFoundException('no tdx kline data, pleaes check path %s', fname)
-
+            
         security_type = self.get_security_type(fname)
         if security_type not in self.SECURITY_TYPE:
             print("Unknown security type !\n")
@@ -105,9 +105,7 @@ class TdxDailyBarReader(BaseReader):
             elif code_head in ["10", "11", "12", "13", "14"]:
                 return "SZ_BOND"
         elif exchange == self.SECURITY_EXCHANGE[1]:
-
-
-            if code_head in ["60", "68"]: # 688XXX科创板
+            if code_head in ["60"]:
                 return "SH_A_STOCK"
             elif code_head in ["90"]:
                 return "SH_B_STOCK"
@@ -115,18 +113,24 @@ class TdxDailyBarReader(BaseReader):
                 return "SH_INDEX"
             elif code_head in ["50", "51"]:
                 return "SH_FUND"
-            elif code_head in ["01", "10", "11", "12", "13", "14", "20"]:
+            elif code_head in ["01", "10", "11", "12", "13", "14"]:
                 return "SH_BOND"
+        elif exchange == self.SECURITY_EXCHANGE[2]:
+            # Beijing Stock Exchange: 8x/4x are stocks, 89 is index family.
+            if code_head in ["89"]:
+                return "BJ_INDEX"
+            elif code_head[:1] in ["4", "8"]:
+                return "BJ_A_STOCK"
         else:
             print("Unknown security exchange !\n")
             raise NotImplementedError
 
-    SECURITY_EXCHANGE = ["sz", "sh"]
-    SECURITY_TYPE = ["SH_A_STOCK", "SH_B_STOCK", "SH_INDEX", "SH_FUND", "SH_BOND", "SZ_A_STOCK", "SZ_B_STOCK", "SZ_INDEX", "SZ_FUND", "SZ_BOND"]
-    SECURITY_COEFFICIENT = {"SH_A_STOCK": [0.01, 0.01], "SH_B_STOCK": [0.001, 0.01], "SH_INDEX": [0.01, 1.0], "SH_FUND": [0.001, 1.0], "SH_BOND": [0.001, 1.0], "SZ_A_STOCK": [0.01, 0.01], "SZ_B_STOCK": [0.01, 0.01], "SZ_INDEX": [0.01, 1.0], "SZ_FUND": [0.001, 0.01], "SZ_BOND": [0.001, 0.01]}
+    SECURITY_EXCHANGE = ["sz", "sh", "bj"]
+    SECURITY_TYPE = ["SH_A_STOCK", "SH_B_STOCK", "SH_INDEX", "SH_FUND", "SH_BOND", "SZ_A_STOCK", "SZ_B_STOCK", "SZ_INDEX", "SZ_FUND", "SZ_BOND", "BJ_A_STOCK", "BJ_INDEX"]
+    SECURITY_COEFFICIENT = {"SH_A_STOCK": [0.01, 0.01], "SH_B_STOCK": [0.001, 0.01], "SH_INDEX": [0.01, 1.0], "SH_FUND": [0.001, 1.0], "SH_BOND": [0.001, 1.0], "SZ_A_STOCK": [0.01, 0.01], "SZ_B_STOCK": [0.01, 0.01], "SZ_INDEX": [0.01, 1.0], "SZ_FUND": [0.001, 0.01], "SZ_BOND": [0.001, 0.01], "BJ_A_STOCK": [0.01, 0.01], "BJ_INDEX": [0.01, 1.0]}
 
 if __name__ == '__main__':
-    tdx_reader = TdxDailyBarReader('/Users/rainx/tmp/vipdoc/')
+    tdx_reader = TdxDailyBarReader('/tmp/vipdoc/')
     try:
         #for row in tdx_reader.parse_data_by_file('/Volumes/more/data/vipdoc/sh/lday/sh600000.day'):
         #    print(row)
